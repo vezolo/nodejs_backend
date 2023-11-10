@@ -1,15 +1,18 @@
 {
   "name": "vezolo",
   "version": "1.0.0",
-  "description": "Backend for Vezolo",
+  "description": "Backend for Vezolo",  
   "main": "index.js",
   "engines": {
     "node": "18.17.0",
     "npm": "9.8.1"
   },
+  "config": {
+    "port": "3001"
+  },
   "scripts": {
     "test": "jest",
-    "start": "nodemon ./index"
+    "start": "nodemon -e .js,.json,.env"
   },
   "dependencies": {
     "@sendgrid/mail": "^7.7.0",
