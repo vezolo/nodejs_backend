@@ -100,4 +100,19 @@ userSchema.methods.comparePassword = function (candidatePassword) {
     });
 };
 
-module.exports = { Users: mongoose.model("User", userSchema) };
+const connectionSchema = new mongoose.Schema({
+    fromId: {
+        type: mongoose.Types.ObjectId
+    },
+    toId: {
+        type: mongoose.Types.ObjectId
+    },
+    status: {
+        type: String
+    },
+    createdAt: {
+        type: Date
+    },
+})
+
+module.exports = { Users: mongoose.model("User", userSchema), Connection:  mongoose.model("Connection", connectionSchema) };
