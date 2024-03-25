@@ -1,14 +1,14 @@
-const mongoose = require("mongoose");
+const { Schema, model, Types: { ObjectId } } = require("mongoose");
 
-const chatSchema = new mongoose.Schema({
-    for: {
-        type: mongoose.Types.ObjectId
-    },
+const chatSchema = new Schema({
+    for: [{
+        type: ObjectId
+    }],
     fromId: {
-        type: mongoose.Types.ObjectId
+        type: ObjectId
     },
     toId: {
-        type: mongoose.Types.ObjectId
+        type: ObjectId
     },
     status: {
         type: String
@@ -30,12 +30,12 @@ const chatSchema = new mongoose.Schema({
     }
 })
 
-const groupChatSchema = new mongoose.Schema({
+const groupChatSchema = new Schema({
     fromId: {
-        type: mongoose.Types.ObjectId
+        type: ObjectId
     },
     toId: {
-        type: mongoose.Types.ObjectId
+        type: ObjectId
     },
     status: {
         type: String
@@ -54,24 +54,72 @@ const groupChatSchema = new mongoose.Schema({
     },
 })
 
-const groupSchema = new mongoose.Schema({
+const groupSchema = new Schema({
     title: {
         type: String
     },
     admins: {
-        type: [mongoose.Types.ObjectId]
+        type: [ObjectId]
     },
     createdAt: {
         type: Date
     }
 })
 
-const groupMemberSchema = new mongoose.Schema({
+const groupMemberSchema = new Schema({
     userId: {
-        type: mongoose.Types.ObjectId
+        type: ObjectId
     },
     groupId: {
-        type: mongoose.Types.ObjectId
+        type: ObjectId
+    },
+    createdAt: {
+        type: Date
+    }
+})
+
+const UnitChatSchema = new Schema({
+    fromId: {
+        type: ObjectId
+    },
+    toId: {
+        type: ObjectId
+    },
+    status: {
+        type: String
+    },
+    message: {
+        type: String
+    },
+    files: {
+        type: Array
+    },
+    images: {
+        type: Array
+    },
+    createdAt: {
+        type: Date
+    },
+})
+
+const UnitSchema = new Schema({
+    title: {
+        type: String
+    },
+    createdAt: {
+        type: Date
+    }
+})
+
+const UnitMemberSchema = new Schema({
+    userId: {
+        type: ObjectId
+    },
+    groupId: {
+        type: ObjectId
+    },
+    role: {
+        type: String
     },
     createdAt: {
         type: Date
@@ -79,8 +127,11 @@ const groupMemberSchema = new mongoose.Schema({
 })
 
 module.exports = {
-    Chat: mongoose.model("Chat", chatSchema),
-    Group: mongoose.model("Group", groupSchema),
-    GroupChat: mongoose.model("GroupChat", groupChatSchema),
-    GroupMembers: mongoose.model("GroupMembers", groupMemberSchema),
+    Chat: model("Chat", chatSchema),
+    Group: model("Group", groupSchema),
+    GroupChat: model("GroupChat", groupChatSchema),
+    GroupMembers: model("GroupMembers", groupMemberSchema),
+    UnitSchema: model("Unit", UnitSchema),
+    UnitChatSchema: model("UnitChat", UnitChatSchema),
+    UnitMemberSchema: model("UnitMembers", UnitMemberSchema),
 };

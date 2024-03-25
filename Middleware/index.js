@@ -10,15 +10,20 @@ module.exports = (req, res, next) => {
     }
 
     const token = authorization.replace("Bearer ", "");
-    
-    jwt.verify(token, process.env.JWTKEY, async (err, payload) => {
-        if (err) {
-            return res.status(401).send({ error: "Wrong User" });
-        }
 
-        const { userId } = payload;
-        const user = await User.findById(userId);
-        req.user = user;
-        next();
-    });
+    if (token == process.env.token) {
+        req.user = "vezolo"
+        next()
+    }
+
+    // jwt.verify(token, process.env.JWTKEY, async (err, payload) => {
+    //     if (err) {
+    //         return res.status(401).send({ error: "Wrong User" });
+    //     }
+
+    //     const { userId } = payload;
+    //     const user = await User.findById(userId);
+    //     req.user = user;
+    //     next();
+    // });
 };

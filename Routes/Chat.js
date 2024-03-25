@@ -3,10 +3,16 @@ const { model, Types: { ObjectId } } = require("mongoose");
 const User = model("User");
 const Chat = model("Chat");
 const Connection = model("Connection");
+
 const Group = model("Group");
 const GroupChat = model("GroupChat");
 const GroupMembers = model("GroupMembers");
 
+const Unit = model("Unit");
+const UnitChat = model("UnitChat");
+const UnitMembers = model("UnitMembers");
+
+// chat routers
 router.get("/chat/:loggedUser/:connectedUser", async (req, res) => {
     const { loggedUser, connectedUser } = req.params
 
@@ -150,16 +156,12 @@ router.post("/chat", async (req, res) => {
     const fromId = new ObjectId(from)
     const toId = new ObjectId(to);
 
-    const resultFrom = await Chat.create({
-        for: fromId, fromId, toId, status: 'sent', message, files, images, createdAt
+    const result = await Chat.create({
+        for: [fromId, toId], fromId, toId, status: 'sent', message, files, images, createdAt
     })
 
-    const resultTo = await Chat.create({
-        for: toId, fromId, toId, status: 'sent', message, files, images, createdAt
-    })
-
-    if (resultFrom && resultTo) {
-        io?.emit("chat:create", JSON.stringify([{ ...resultFrom._doc, sendId }, resultTo]))
+    if (result) {
+        io?.emit("chat:create", JSON.stringify({ ...result._doc, sendId }))
         res.status(200).send()
     } else {
         res.status(404)
@@ -190,6 +192,7 @@ router.put("/chat", async (req, res) => {
     }
 })
 
+// group routers
 router.get("/groupchat:list/:_id", async (req, res) => {
     const { _id } = req.params
 
@@ -371,7 +374,6 @@ router.post("/group/members", async (req, res) => {
     }
 })
 
-
 router.get("/group/:groupId/members", async (req, res) => {
 
     const { groupId } = req.params
@@ -408,4 +410,214 @@ router.get("/group/:groupId/members", async (req, res) => {
     }
 })
 
+// unit routers
+router.get("/unitchat:list/:_id", async (req, res) => {
+    const { _id } = req.params
+
+    const userId = new ObjectId(_id)
+
+    const units = await Unit.aggregate([
+        {
+            $lookup: {
+                from: 'unitmembers',
+                localField: '_id',
+                foreignField: 'unitId',
+                as: 'unitMembers'
+            }
+        },
+        {
+            $match: {
+                $or: [
+                    { admins: { $elemMatch: { $eq: userId } } },
+                    { 'unitMembers.userId': userId },
+                ]
+            }
+        },
+        {
+            $lookup: {
+                from: 'unitchats',
+                localField: "_id",
+                foreignField: "toId",
+                as: "chat"
+            }
+        },
+        {
+            $project: {
+                _id: "$_id",
+                title: "$title",
+                admins: "$admins",
+                type: "unit",
+                createdAt: "$createdAt",
+                lastChat: {
+                    $arrayElemAt: [
+                        '$chat',
+                        -1
+                    ]
+                }
+            }
+        },
+    ])
+
+    console.log(units)
+
+    res.status(200).send(units)
+})
+
+router.get("/unitchat/:loggedUser/:groupId", async (req, res) => {
+    const { loggedUser, groupId } = req.params
+
+    const loggedId = new ObjectId(loggedUser)
+    const connectedId = new ObjectId(groupId);
+
+    const result = await UnitChat.aggregate([
+        {
+            $match: { toId: connectedId }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "fromId",
+                foreignField: "_id",
+                as: "user"
+            }
+        },
+        {
+            $unwind: "$user"
+        },
+        {
+            $project: {
+                _id: 1,
+                message: 1,
+                fromId: 1,
+                toId: 1,
+                images: 1,
+                files: 1,
+                status: 1,
+                createdAt: 1,
+                userId: "$user._id",
+                name: "$user.name",
+                email: "$user.email",
+                username: "$user.username",
+            }
+        }
+    ])
+
+    if (result) {
+        res.status(200).send(result)
+    } else {
+        res.status(404)
+    }
+
+})
+
+router.post("/unitchat", async (req, res) => {
+    const { ...rest } = req.body
+
+    const result = await Unit.create({
+        ...rest,
+        createdAt: new Date()
+    })
+
+    if (result) {
+        res.status(200).send(result)
+    } else {
+        res.status(404)
+    }
+})
+
+router.post("/unit/chat", async (req, res) => {
+    const io = req.app.get("io")
+
+    const { from, to, message, files, images, sendId, createdAt } = req.body
+
+    const fromId = new ObjectId(from)
+    const toId = new ObjectId(to);
+
+    const result = await UnitChat.create({
+        fromId, toId, status: 'sent', message, files, images, createdAt
+    })
+
+    if (result) {
+        io?.emit("unitchat:create", JSON.stringify([{ ...result._doc, sendId }]))
+        res.status(200).send()
+    } else {
+        res.status(404)
+    }
+})
+
+router.post("/unit/members", async (req, res) => {
+    const io = req.app.get("io")
+
+    const { members, _id } = req.body
+
+    const unitId = new ObjectId(_id)
+    const membersId = members?.map(item => new ObjectId(item))
+
+    const insertPromises = membersId.map(async member => {
+        const newMember = new UnitMembers({
+            userId: member,
+            unitId
+        });
+        return await newMember.save();
+    });
+
+    await Promise.all(insertPromises);
+
+    const users = await User.aggregate([
+        {
+            $match: { _id: { $in: membersId } }
+        },
+        {
+            $project: {
+                _id: 1,
+                name: 1,
+                username: 1,
+                email: 1
+            }
+        }
+    ])
+
+    if (users) {
+        io?.emit("unit/members:create", JSON.stringify(users))
+        res.status(200).send(users)
+    } else {
+        res.status(404)
+    }
+})
+
+router.get("/unit/:unitId/members", async (req, res) => {
+
+    const { unitId } = req.params
+
+    const users = await UnitMembers.aggregate([
+        {
+            $match: { unitId: new ObjectId(unitId) }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "userId",
+                foreignField: "_id",
+                as: "user"
+            }
+        },
+        {
+            $unwind: "$user"
+        },
+        {
+            $project: {
+                _id: "$user._id",
+                name: "$user.name",
+                username: "$user.username",
+                email: "$user.email",
+            }
+        }
+    ])
+
+    if (users) {
+        res.status(200).send(users)
+    } else {
+        res.status(404)
+    }
+})
 module.exports = router

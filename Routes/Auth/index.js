@@ -90,6 +90,7 @@ router.post("/otp", async (req, res) => {
 
 router.post("/signin", async (req, res) => {
     const { email, password } = req.body;
+    console.log(req.body)
 
     if (!email || !password) {
         return res
