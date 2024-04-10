@@ -3,11 +3,11 @@ const { model, Types: { ObjectId } } = require("mongoose");
 const Leads = model("Leads");
 
 router.post("/leads", async (req, res) => {
-    const { createdBy, ...rest } = req.body;
+    const { userId, ...rest } = req.body;
 
     try {
         const result = await Leads.create({
-            ...rest, createdBy: new ObjectId(createdBy)
+            ...rest, userId: new ObjectId(userId)
         })
         res.status(200).send(result)
     } catch (err) {
@@ -19,7 +19,7 @@ router.get("/leads/:userId/:workspace", async (req, res) => {
     const { userId, workspace } = req.params;
 
     try {
-        const result = await Leads.find({ createdBy: new ObjectId(userId) })
+        const result = await Leads.find({ userId: new ObjectId(userId), workspace })
         res.status(200).send(result)
     } catch (err) {
         res.status(500).send({ error: err, message: "Internal server error" })

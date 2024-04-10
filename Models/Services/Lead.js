@@ -26,8 +26,11 @@ const schema = new Schema({
     createdAt: {
         type: Date,
     },
-    createdBy: {
+    userId: {
         type: ObjectId,
+    },
+    workspace: {
+        type: String,
     }
 });
 

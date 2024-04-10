@@ -18,10 +18,11 @@ router.post("/user", async (req, res) => {
     res.status(200).send(user)
 })
 
-router.get("/user/:username", async (req, res) => {
-    const { username } = req.params;
+router.get("/user/:_id", async (req, res) => {
+    const { _id } = req.params;
+    console.log(_id)
 
-    const user = await User.findOne({ username }, '-password');
+    const user = await User.findById(_id, '-password');
     res.status(200).send(user)
 })
 
