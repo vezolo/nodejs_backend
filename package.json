@@ -12,7 +12,7 @@
   },
   "scripts": {
     "test": "jest",
-    "start": "node Server/index.js",
+    "start": "node index.js",
     "dev": "SET NODE_ENV=development && nodemon -r dotenv/config",
     "dotenv": "npx dotenv-vault@latest"
   },
